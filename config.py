@@ -12,11 +12,11 @@ class DefaultConfig(object):
     # img_path = './data/img_data/'
     labels = ['1', '0']  # would need to be changed later by the exact formats of labels
     imgs = [os.path.join('./data/img_data/', img) for img in sorted(os.listdir('./data/img_data/'))[1:]]
-
+    env = 'default'
     batch_size = 64  # batch size
     use_gpu = True  # use GPU or not
     num_workers = 4  # how many workers for loading data
-    print_freq = 20  # print info every N batch
+    print_freq = 1  # print info every n epoch
     img_type = 'FA'
     result_file = 'result.csv'
 

@@ -46,7 +46,7 @@ class Conv3d(nn.Module):
 
     def forward(self, x):
         x = self.conv_layer1(x)
-        x=  self.conv_layer2(x)
+        x = self.conv_layer2(x)
         x = self.conv_layer3(x)
         x = self.conv_layer4(x)
         x = self.conv_layer5(x)
