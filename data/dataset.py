@@ -6,15 +6,14 @@
 
 import os
 import torchio
-from random import seed
-import copy
-import SimpleITK as sitk
+import random
 
-seed(888)
+
+random.seed(888)
 
 # Set up the data-set via TorchIO
 
-  def make_dataset(imgs, labels):
+def make_dataset(imgs, labels):
     subjects = list()
     for (img, label) in zip(imgs, labels):
         print(img, label)
@@ -26,7 +25,7 @@ seed(888)
         print(subject_dict)
         subject = torchio.Subject(subject_dict)
         subjects.append(subject)
-    data_set = torchio.ImagesDataset(subjects)
+    data_set = torchio.ImagesDataset(subjects)  # remember to add data augmentation options here!
     print('Dataset size:', len(data_set), 'subjects')
     return data_set
 
@@ -62,9 +61,10 @@ if __name__ == "__main__":
 
     # set up a data-loader that directly fits torch
     num_subjects = len(data_set)
-    training_split_ratio = 0.8
+    training_split_ratio = 1
     num_training_subjects = int(training_split_ratio * num_subjects)
     subjects = data_set.subjects
+
 
     training_subjects = subjects[:num_training_subjects]
     validation_subjects = subjects[num_training_subjects:]
