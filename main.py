@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from models.models import Conv3d
 from torchnet import meter
 import torchio
-#from torch.autograd import Variable
+import numpy as np
 from visdom import Visdom
 from utils.visualize import Visualizer
 
@@ -22,16 +22,16 @@ from utils.visualize import Visualizer
 #imgs = [os.path.join(img_path, img) for img in sorted(os.listdir(img_path))[1:]]
 
 
-opt = DefaultConfig()
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-global_step = 0
+
+
+
 
 def train():
     # model
+    opt = DefaultConfig()
+    global_step = 0
     model = Conv3d(num_classes = 2)
-
-    # data preparation
-    training_loader = DataLoader(training_set)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # loss
     criterion = torch.nn.CrossEntropyLoss()
@@ -47,7 +47,7 @@ def train():
     # create training and val
     data_set = make_dataset(opt.imgs, opt.labels)
     num_subjects = len(data_set)
-    training_split_ratio = 0.8
+    training_split_ratio = opt.training_split_ratio
     num_training_subjects = int(training_split_ratio * num_subjects)
     subjects = data_set.subjects
 
@@ -55,10 +55,10 @@ def train():
     validation_subjects = subjects[num_training_subjects:]
 
     training_set = torchio.ImagesDataset(training_subjects)
-    validation_set = torchio.ImagesDataset(validation_subjects)
+    #validation_set = torchio.ImagesDataset(validation_subjects)
 
-    training_loader = DataLoader(training_set, batch_size= opt.batch_size)
-    val_loader = DataLoader(validation_set, batch_size= opt.batch_size)
+    training_loader = DataLoader(training_set, batch_size = opt.batch_size)
+    #val_loader = DataLoader(validation_set, batch_size = opt.batch_size)
 
     # visualization
 
@@ -74,14 +74,18 @@ def train():
 
         for batch_idx, data in enumerate(training_loader):
 
-            input = data[opt.img_type]['data'].reshape(opt.batch_size,192,192,120) # tensor already?
-            target = data['label'] # tensor already?
+            input_data = data[opt.img_type]['data'].view(-1, 120, 192, 192, 1) # tensor already?
+            target = torch.tensor(list(map(float, data['label']))) # tensor already?
+            print("input size:{}".format(input_data.shape))
+            print("target size:{}".format(target.shape))
             if opt.use_gpu:
-                inputs = input.to(device)
-                targets = target.to(device)
+                input_data = input_data.to(device)
+                #print(type(inputs))
+                targets = torch.tensor(target).to(device)
+
             optimizer.zero_grad()
-            res = model(inputs)
-            loss = criterion(score,targets)
+            res = model(input_data)
+            loss = criterion(score, targets)
             loss.backward()
             optimizer.step()
             global_step += 1
@@ -101,11 +105,11 @@ def train():
         model.save()
 
         # validation
-        val_cm, val_acc = val(model, val_dataloader)
+        #val_cm, val_acc = val(model, val_dataloader)
         visualizer.plot('val_acc', val_acc)
         visualizer.log("epoch:{epoch}, lr:{lr}, loss:{loss}, train_cm:{train_cm), val_cm:{val_cm}".format(
             epoch = epoch,
-            loss = loss_meter.value()[0]
+            loss = loss_meter.value()[0],
             val_cm = str(val_cm.value()),
             train_cm = str(confusion_matrix.value()),
             lr = lr
@@ -127,7 +131,7 @@ def val(model,dataloader):
     confusion_matrix = meter.ConfusionMeter(2)
     for batch_idx, data in tqdm(enumerate(dataloader)):
         val_input = data[opt.img_type]['data'].reshape(opt.batch_size, 192, 192, 120)  # tensor already?
-        val_label = data['label'] # tensor already?
+        val_label = torch.tensor(data['label']) # tensor already?
 
         if opt.use_gpu:
             val_input.to(device)
@@ -151,7 +155,7 @@ def val(model,dataloader):
 #    if opt.load_model_path:
 #        model.load(opt.load_model_path)
 #    if opt.use_gpu:
-#        model.cuda()
+#        model.to(device)
 #
 #    # data
 #    test_data =

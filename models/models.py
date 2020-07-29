@@ -18,15 +18,15 @@ class Conv3d(nn.Module):
 
         super(Conv3d, self).__init__()
 
-        self.conv_layer1 = self.make_conv_layer(120, 128, (11, 11, 11), (4, 4, 4))
-        self.conv_layer2 = self.make_conv_layer(128, 256, (5, 5, 5), (1, 1, 1))
-        self.conv_layer3 = self.make_conv_layer(256, 512, (3, 3, 3), (1, 1, 1))
-        self.conv_layer4 = self.make_conv_layer(512, 1024, (3, 3, 3), (1, 1, 1))
-        self.conv_layer5 = self.make_conv_layer(1024, 1024, (3, 3, 3), (1, 1, 1))
+        self.conv_layer1 = self.make_conv_layer(120, 128, (2, 2, 1), (2, 2, 1))
+        self.conv_layer2 = self.make_conv_layer(128, 256, (2, 2, 1), (1, 1, 1))
+        self.conv_layer3 = self.make_conv_layer(256, 512, (2, 2, 1), (1, 1, 1))
+        self.conv_layer4 = self.make_conv_layer(512, 1024, (2, 2, 1), (1, 1, 1))
+        self.conv_layer5 = self.make_conv_layer(1024, 1024, (2, 2, 1), (1, 1, 1))
 
         self.fc1 = nn.Linear(1024, 512)
         self.relu = nn.LeakyReLU()
-        self.batch0 = nn.BatchNorm3d(512)
+        self.batch0 = nn.BatchNorm1d(512)
         self.drop = nn.Dropout3d(p=0.15)
         self.fc2 = nn.Linear(512, 256)
         self.relu = nn.LeakyReLU()
@@ -34,17 +34,16 @@ class Conv3d(nn.Module):
         self.drop = nn.Dropout3d(p=0.15)
         self.fc3 = nn.Linear(256, num_classes)
 
-
-
     def make_conv_layer(self,in_channel,out_channel, k_size, s):
         conv_layer = nn.Sequential(
             nn.Conv3d(in_channels=in_channel, out_channels=out_channel, kernel_size=k_size, padding=0, stride=s),
             nn.LeakyReLU(),
-            nn.MaxPool3d((2, 2, 2))
+            nn.MaxPool3d((2, 2, 1))
         )
         return conv_layer
 
     def forward(self, x):
+        print(x.shape)
         x = self.conv_layer1(x)
         x = self.conv_layer2(x)
         x = self.conv_layer3(x)
