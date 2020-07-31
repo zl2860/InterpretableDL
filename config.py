@@ -21,8 +21,8 @@ class DefaultConfig(object):
     result_file = 'result.csv'
     training_split_ratio = 0.5
 
-    max_epoch = 10
-    lr = 0.1  # initial learning rate
+    max_epoch = 400
+    lr = 0.0001  # initial learning rate
     lr_decay = 0.95  # when val_loss increase, lr = lr*lr_decay
     weight_decay = 1e-4 # for loss function
 

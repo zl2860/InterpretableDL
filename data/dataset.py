@@ -9,6 +9,7 @@ import torchio
 import random
 
 
+
 random.seed(888)
 
 # Set up the data-set via TorchIO
@@ -18,8 +19,8 @@ def make_dataset(imgs, labels):
     for (img, label) in zip(imgs, labels):
         print(img, label)
         subject_dict = {
-            'FA': torchio.Image(img + '/FA.nii.gz', torchio.INTENSITY),
-            'MD': torchio.Image(img + '/MD.nii.gz', torchio.INTENSITY),
+            'FA': torchio.Image(img + '/FA.nii.gz', torchio.LABEL),
+            'MD': torchio.Image(img + '/MD.nii.gz', torchio.LABEL),
             'label': label
         }
         print(subject_dict)
@@ -47,6 +48,8 @@ def make_dataset(imgs, labels):
   #      show_nifti(f.name)
 
 if __name__ == "__main__":
+
+    import matplotlib.pyplot as plt
     img_path = './data/img_data/'
     labels = ['1', '0']  # would be changed later by the exact formats of labels
     imgs = [os.path.join(img_path, img) for img in sorted(os.listdir(img_path))[1:]]
@@ -61,7 +64,7 @@ if __name__ == "__main__":
 
     # set up a data-loader that directly fits torch
     num_subjects = len(data_set)
-    training_split_ratio = 1
+    training_split_ratio = 0.5
     num_training_subjects = int(training_split_ratio * num_subjects)
     subjects = data_set.subjects
 
@@ -71,6 +74,12 @@ if __name__ == "__main__":
 
     training_set = torchio.ImagesDataset(training_subjects)
     validation_set = torchio.ImagesDataset(validation_subjects)
+
+    temp = DataLoader(training_set)
+    for _, data in enumerate(temp):
+        # tensor already? view(-1, 120, 192, 192, 1) org: torch.Size([2, 1, 192, 192, 120])
+        vis_temp = data['FA']['data'][0,0,:,:,:][:, :, 69]
+        plt.imshow(vis_temp)
 
     print('Training set:', len(training_set), 'subjects')
     print('Validation set:', len(validation_set), 'subjects')

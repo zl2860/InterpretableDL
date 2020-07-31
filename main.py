@@ -75,13 +75,21 @@ def train():
         confusion_matrix.reset()
 
         for batch_idx, data in enumerate(training_loader):
-
-            input_data = (data[opt.img_type]['data'].view(-1, 120, 192, 192, 1))/255.0  # tensor already?
+            print(data[opt.img_type]['data'].shape)
+            input_data = data[opt.img_type]['data'].view(-1, 120, 192, 192, 1)  # tensor already? view(-1, 120, 192, 192, 1) org: torch.Size([2, 1, 192, 192, 120])
+            vis_data_1 = (data['FA']['data'][0, 0, :, :, :][:, :, 69]) * 255.0
+            vis_data_2 = (data['FA']['data'][0, 0, :, :, :][69, :, :]) * 255.0
+            vis_data_3 = (data['FA']['data'][0, 0, :, :, :][:, 69, :]) * 255.0
+            #print("vis data.shape{}".format(vis_data.shape))
             input_data[torch.isnan(input_data)] = 0  # Nan all set to 0
             targets = torch.tensor(list(map(float, data['label'])), dtype=torch.long)  # tensor already?
-            print(targets)
-            print("input size:{}".format(input_data.shape))
-            print("target size:{}".format(targets.shape))
+            print("targets : {}".format(targets))
+            print("input size: {}".format(input_data.shape))
+            print("target size: {}".format(targets.shape))
+            print(input_data[0, :, :, :, :].view(120,192,192)[89, :, :].shape) #
+            visualizer.img("slice{}".format(69_1), vis_data_1)
+            visualizer.img("slice{}".format(69_2), vis_data_2.T)
+            visualizer.img("slice{}".format(69_3), vis_data_3)
             if opt.use_gpu:
                 input_data = input_data.to(device)
                 targets = torch.tensor(targets).to(device)
@@ -115,9 +123,9 @@ def train():
         # validation
         val_cm, val_acc = val(model, val_loader)
         visualizer.plot('val_acc', val_acc)
-        visualizer.log("epoch:{epoch}, lr:{lr}, loss:{loss}, train_cm:{train_cm}, val_cm:{val_cm}".format(
+        visualizer.log("epoch:{epoch} || lr:{lr} | loss:{loss} | train_cm:{train_cm} | val_cm:{val_cm}".format(
             epoch = epoch,
-            lr=opt.lr,
+            lr= opt.lr,
             loss = loss_meter.value()[0],
             train_cm = str(confusion_matrix.value()),
             val_cm = str(val_cm.value())
