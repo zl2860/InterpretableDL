@@ -15,10 +15,9 @@ The model runs smoothly on sample data. However, for real data, the sample size 
 run the demo:
 ```
 #set up the visdom server first:
-
 python -m visdom.server
 
-#starting training and navigate to the dashboard to check the progress:
+#start training and navigate to the dashboard to check the progress:
 python main.py train
 ```
 
