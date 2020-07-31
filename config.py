@@ -10,7 +10,7 @@ import os
 class DefaultConfig(object):
 
     # img_path = './data/img_data/'
-    labels = ['1', '0']  # would need to be changed later by the exact formats of labels
+    labels = ['1', '0', '0', '1']  # would need to be changed later by the exact formats of labels
     imgs = [os.path.join('./data/img_data/', img) for img in sorted(os.listdir('./data/img_data/'))[1:]]
     env = 'default'
     batch_size = 2  # batch size
@@ -19,7 +19,7 @@ class DefaultConfig(object):
     print_freq = 1  # print info every n epoch
     img_type = 'FA'
     result_file = 'result.csv'
-    training_split_ratio = 1
+    training_split_ratio = 0.5
 
     max_epoch = 10
     lr = 0.1  # initial learning rate

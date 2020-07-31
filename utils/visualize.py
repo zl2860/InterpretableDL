@@ -14,8 +14,8 @@ class Visualizer(object):
     encapsulate basic operations from visdom. You can still use `self.vis.function` to call visdom APIs
     """
 
-    def __init__(self, env='default', **kwargs):
-        self.vis = visdom.Visdom(env=env, use_incoming_socket=False, **kwargs)
+    def __init__(self, env='default',**kwargs):
+        self.vis = visdom.Visdom(env=env, use_incoming_socket=False, **kwargs, port=8097)
 
         # 画的第几个数，相当于横座标
         # 保存（’loss',23） 即loss的第23个点

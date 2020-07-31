@@ -24,7 +24,7 @@ class Conv3d(nn.Module):
         self.conv_layer4 = self.make_conv_layer(512, 1024, (2, 2, 1), (1, 1, 1))
         self.conv_layer5 = self.make_conv_layer(1024, 1024, (2, 2, 1), (1, 1, 1))
 
-        self.fc1 = nn.Linear(1024, 512)
+        self.fc1 = nn.Linear(4096, 512)
         self.relu = nn.LeakyReLU()
         self.batch0 = nn.BatchNorm1d(512)
         self.drop = nn.Dropout3d(p=0.15)
@@ -33,6 +33,7 @@ class Conv3d(nn.Module):
         self.batch1 = nn.BatchNorm1d(256)
         self.drop = nn.Dropout3d(p=0.15)
         self.fc3 = nn.Linear(256, num_classes)
+        self.sigmoid = nn.Sigmoid()
 
     def make_conv_layer(self,in_channel,out_channel, k_size, s):
         conv_layer = nn.Sequential(
@@ -50,6 +51,7 @@ class Conv3d(nn.Module):
         x = self.conv_layer4(x)
         x = self.conv_layer5(x)
         x = x.view(x.size(0), -1)
+        #print(x.size)
         x = self.fc1(x)
         x = self.relu(x)
         x = self.batch0(x)
@@ -60,5 +62,6 @@ class Conv3d(nn.Module):
         x = self.drop(x)
         x_1 = x
         x = self.fc3(x)
+        x = self.sigmoid(x)
 
-        return x, x_1
+        return x, x_1  # 最后一层，倒数第二层

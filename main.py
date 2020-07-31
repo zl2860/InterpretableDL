@@ -12,9 +12,11 @@ from torch.utils.data import DataLoader
 from models.models import Conv3d
 from torchnet import meter
 import torchio
+from torch.autograd import Variable
 import numpy as np
 from visdom import Visdom
 from utils.visualize import Visualizer
+from tqdm import tqdm
 
 
 #img_path = './data/img_data/'
@@ -42,7 +44,7 @@ def train():
     # statistical results
     loss_meter = meter.AverageValueMeter()
     confusion_matrix = meter.ConfusionMeter(2)
-    pre_loss = 1e100
+    pre_loss = 1e10
 
     # create training and val
     data_set = make_dataset(opt.imgs, opt.labels)
@@ -55,10 +57,10 @@ def train():
     validation_subjects = subjects[num_training_subjects:]
 
     training_set = torchio.ImagesDataset(training_subjects)
-    #validation_set = torchio.ImagesDataset(validation_subjects)
+    validation_set = torchio.ImagesDataset(validation_subjects)
 
     training_loader = DataLoader(training_set, batch_size = opt.batch_size)
-    #val_loader = DataLoader(validation_set, batch_size = opt.batch_size)
+    val_loader = DataLoader(validation_set, batch_size = opt.batch_size)
 
     # visualization
 
@@ -74,25 +76,31 @@ def train():
 
         for batch_idx, data in enumerate(training_loader):
 
-            input_data = data[opt.img_type]['data'].view(-1, 120, 192, 192, 1) # tensor already?
-            target = torch.tensor(list(map(float, data['label']))) # tensor already?
+            input_data = (data[opt.img_type]['data'].view(-1, 120, 192, 192, 1))/255.0  # tensor already?
+            input_data[torch.isnan(input_data)] = 0  # Nan all set to 0
+            targets = torch.tensor(list(map(float, data['label'])), dtype=torch.long)  # tensor already?
+            print(targets)
             print("input size:{}".format(input_data.shape))
-            print("target size:{}".format(target.shape))
+            print("target size:{}".format(targets.shape))
             if opt.use_gpu:
                 input_data = input_data.to(device)
-                #print(type(inputs))
-                targets = torch.tensor(target).to(device)
+                targets = torch.tensor(targets).to(device)
 
             optimizer.zero_grad()
             res = model(input_data)
-            loss = criterion(score, targets)
+            #print(res[0])
+            loss = criterion(res[0], targets)
+            print(loss.data)
             loss.backward()
             optimizer.step()
             global_step += 1
             vis.line([loss.item()], [global_step], win='train_loss', update='append')
 
-            loss_meter.add(loss.data[0])
-            confusion_matrix.add(res.data, target.data)
+            loss_meter.add(loss.data)
+            print("last layer prob: {}".format(res[0].data))  # output from nn.sigmoid
+            predicted = torch.max(res[0].data, 1)[1]
+            confusion_matrix.add(predicted, targets.data)
+            #print(confusion_matrix)
 
             if batch_idx % opt.print_freq == 0:
                 visualizer.plot('loss', loss_meter.value()[0])
@@ -102,18 +110,20 @@ def train():
             print("Epoch: {}/{} | loss: {}".format(epoch, opt.max_epoch, loss.item()))
 
 
-        model.save()
+        #model.save()
 
         # validation
-        #val_cm, val_acc = val(model, val_dataloader)
+        val_cm, val_acc = val(model, val_loader)
         visualizer.plot('val_acc', val_acc)
-        visualizer.log("epoch:{epoch}, lr:{lr}, loss:{loss}, train_cm:{train_cm), val_cm:{val_cm}".format(
+        visualizer.log("epoch:{epoch}, lr:{lr}, loss:{loss}, train_cm:{train_cm}, val_cm:{val_cm}".format(
             epoch = epoch,
+            lr=opt.lr,
             loss = loss_meter.value()[0],
-            val_cm = str(val_cm.value()),
             train_cm = str(confusion_matrix.value()),
-            lr = lr
+            val_cm = str(val_cm.value())
         ))
+
+        #print(loss_meter.value()[0] > pre_loss)
 
         if loss_meter.value()[0] > pre_loss:
             lr = lr * opt.lr_decay
@@ -128,17 +138,21 @@ def val(model,dataloader):
     obtain info from validation set
     """
     model.eval()
+    opt = DefaultConfig()
     confusion_matrix = meter.ConfusionMeter(2)
     for batch_idx, data in tqdm(enumerate(dataloader)):
-        val_input = data[opt.img_type]['data'].reshape(opt.batch_size, 192, 192, 120)  # tensor already?
-        val_label = torch.tensor(data['label']) # tensor already?
+        val_input = data[opt.img_type]['data'].view(-1, 120, 192, 192, 1)  # tensor already?
+        val_input[torch.isnan(val_input)] = 0
+        val_label = torch.tensor(list(map(float, data['label'])), dtype=torch.long)  # tensor already?
 
         if opt.use_gpu:
             val_input.to(device)
             val_label.to(device)
 
         val_res = model(val_input)
-        confusion_matrix.add(val_res.detach().squeeze(), val_label.type(t.LongTensor))
+        predicted = torch.max(val_res[0].data, 1)[1]
+        confusion_matrix.add(predicted, val_label.data)
+        #confusion_matrix.add(val_res.detach().squeeze(), val_label.type(t.LongTensor))
 
     model.train()
     cm_value = confusion_matrix.value()
