@@ -76,7 +76,7 @@ def train():
 
         for batch_idx, data in enumerate(training_loader):
             print(data[opt.img_type]['data'].shape)
-            input_data = data[opt.img_type]['data'].view(-1, 120, 192, 192, 1)  # tensor already? view(-1, 120, 192, 192, 1) org: torch.Size([2, 1, 192, 192, 120])
+            input_data = data[opt.img_type]['data'].view(-1, 1, 192, 192, 120)  # tensor already? view(-1, 120, 192, 192, 1) org: torch.Size([2, 1, 192, 192, 120])
             vis_data_1 = (data['FA']['data'][0, 0, :, :, :][:, :, 69]) * 255.0
             vis_data_2 = (data['FA']['data'][0, 0, :, :, :][69, :, :]) * 255.0
             vis_data_3 = (data['FA']['data'][0, 0, :, :, :][:, 69, :]) * 255.0
@@ -149,7 +149,7 @@ def val(model,dataloader):
     opt = DefaultConfig()
     confusion_matrix = meter.ConfusionMeter(2)
     for batch_idx, data in tqdm(enumerate(dataloader)):
-        val_input = data[opt.img_type]['data'].view(-1, 120, 192, 192, 1)  # tensor already?
+        val_input = data[opt.img_type]['data'].view(-1, 1, 192, 192, 120)  # tensor already?
         val_input[torch.isnan(val_input)] = 0
         val_label = torch.tensor(list(map(float, data['label'])), dtype=torch.long)  # tensor already?
 
