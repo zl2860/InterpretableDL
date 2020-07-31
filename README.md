@@ -10,4 +10,4 @@ in deep learning. Link: https://arxiv.org/abs/2003.04696
 added train funcs, not yet completed
 ## 2020.07.29
 The model runs smoothly on sample data;
-![image](https://github.com/zl2860/3d-CNN-DTI/edit/master/img_files/2101596167622_.pic_hd.jpg)
+![image](img_files/2101596167622_.pic_hd.jpg)
