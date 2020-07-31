@@ -13,11 +13,13 @@ in deep learning. Link: https://arxiv.org/abs/2003.04696)
 The model runs smoothly on sample data. However, for real data, the sample size should be large enough(with correct labels) and transformation parameters should be set carefully
 
 run the demo:
+```
+#set up the visdom server first:
 
-set up the visdom server first:
-`python -m visdom.server`
+python -m visdom.server
 
-starting training and navigate to the dashboard to check the progress:
-`python main.py train`
+#starting training and navigate to the dashboard to check the progress:
+python main.py train
+```
 
 ![image](img_files/visdom.png)
