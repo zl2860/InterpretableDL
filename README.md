@@ -1,5 +1,5 @@
 # 3d-CNN-DTI
-## Introduction
+## About
 
 This project is for constructing a simple 3d-based deep learning model for brain imaging data. Some details would be changed across the time.
 
