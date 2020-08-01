@@ -21,7 +21,7 @@ def make_dataset(imgs, labels):
         subject_dict = {
             'FA': torchio.Image(img + '/FA.nii.gz', torchio.LABEL),
             'MD': torchio.Image(img + '/MD.nii.gz', torchio.LABEL),
-            'label': label
+            'label': label  # difference b/w label & intensity?
         }
         print(subject_dict)
         subject = torchio.Subject(subject_dict)

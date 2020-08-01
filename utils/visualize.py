@@ -31,7 +31,7 @@ class Visualizer(object):
 
     def plot_many(self, d):
         """
-        一次plot多个
+        plot multiple plots
         @params d: dict (name,value) i.e. ('loss',0.11)
         """
         for k, v in d.items():

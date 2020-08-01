@@ -5,21 +5,28 @@
 # @Software: PyCharm
 
 import os
-
+import warnings
+import torch
 
 class DefaultConfig(object):
 
     # img_path = './data/img_data/'
-    labels = ['1', '0', '0', '1']  # would need to be changed later by the exact formats of labels
-    imgs = [os.path.join('./data/img_data/', img) for img in sorted(os.listdir('./data/img_data/'))[1:]]
+    train_labels = ['1', '0', '0', '1']  # would need to be changed later by the exact formats of labels
+    train_imgs = [os.path.join('./data/img_data/', img) for img in sorted(os.listdir('./data/img_data/'))[1:]]
+    test_labels = ['1', '0', '0', '1'] # temp settings
+    test_imgs = [os.path.join('./data/img_data/', img) for img in sorted(os.listdir('./data/img_data/'))[1:]] # temp settings
     env = 'default'
     batch_size = 2  # batch size
+    test_batch_size = 2 # for test
     use_gpu = False  # use GPU or not
     num_workers = 4  # how many workers for loading data
     print_freq = 1  # print info every n epoch
     img_type = 'FA'
     result_file = 'result.csv'
     training_split_ratio = 0.5
+    load_model_path = None # None = not loading models
+
+
 
     max_epoch = 400
     lr = 0.0001  # initial learning rate
@@ -36,8 +43,13 @@ class DefaultConfig(object):
                 warnings.warn("Warning: opt has not attribut %s" % k)
             setattr(self, k, v)
 
+        opt.device = torch.device('cuda') if opt.use_gpu else torch.device('cpu')
+
         # print --config--
         print('user config:')
         for k, v in self.__class__.__dict__.items():
             if not k.startswith('__'):
                 print(k, getattr(self, k))
+
+
+opt = DefaultConfig()

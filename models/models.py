@@ -18,13 +18,15 @@ class Conv3d(nn.Module):
 
         super(Conv3d, self).__init__()
 
-        self.conv_layer1 = self.make_conv_layer(1, 128, (4, 4, 4), (4, 4, 4))
+        # kernel size may be changed later!
+
+        self.conv_layer1 = self.make_conv_layer(1, 128, (2, 2, 2), (2, 2, 2))
         self.conv_layer2 = self.make_conv_layer(128, 256, (2, 2, 1), (1, 1, 1))
         self.conv_layer3 = self.make_conv_layer(256, 512, (2, 2, 1), (1, 1, 1))
         self.conv_layer4 = self.make_conv_layer(512, 1024, (2, 2, 1), (1, 1, 1))
         self.conv_layer5 = self.make_conv_layer(1024, 1024, (2, 2, 1), (1, 1, 1))
 
-        self.fc1 = nn.Linear(491520, 512)
+        self.fc1 = nn.Linear(245760, 512)
         self.relu = nn.LeakyReLU()
         self.batch0 = nn.BatchNorm1d(512)
         self.drop = nn.Dropout3d(p=0.15)
@@ -39,6 +41,7 @@ class Conv3d(nn.Module):
         conv_layer = nn.Sequential(
             nn.Conv3d(in_channels=in_channel, out_channels=out_channel, kernel_size=k_size, padding=0, stride=s),
             nn.LeakyReLU(),
+            # pooling layers' parameters may be changed later!
             nn.MaxPool3d((2, 2, 1))
         )
         return conv_layer
@@ -50,6 +53,7 @@ class Conv3d(nn.Module):
         x = self.conv_layer3(x)
         x = self.conv_layer4(x)
         x = self.conv_layer5(x)
+        x_1 = x
         x = x.view(x.size(0), -1)
         #print(x.size)
         x = self.fc1(x)
@@ -60,8 +64,8 @@ class Conv3d(nn.Module):
         x = self.relu(x)
         x = self.batch1(x)
         x = self.drop(x)
-        x_1 = x
+        # x_1 = x
         x = self.fc3(x)
         x = self.sigmoid(x)
 
-        return x, x_1  # 最后一层，倒数第二层
+        return x, x_1  # 最后一层，卷积完最后一层

@@ -30,9 +30,9 @@ from tqdm import tqdm
 
 def train():
     # model
-    opt = DefaultConfig()
+    #opt = DefaultConfig()
     global_step = 0
-    model = Conv3d(num_classes = 2)
+    model = Conv3d(num_classes=2)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # loss
@@ -47,7 +47,7 @@ def train():
     pre_loss = 1e10
 
     # create training and val
-    data_set = make_dataset(opt.imgs, opt.labels)
+    data_set = make_dataset(opt.train_imgs, opt.train_labels)
     num_subjects = len(data_set)
     training_split_ratio = opt.training_split_ratio
     num_training_subjects = int(training_split_ratio * num_subjects)
@@ -83,10 +83,12 @@ def train():
             #print("vis data.shape{}".format(vis_data.shape))
             input_data[torch.isnan(input_data)] = 0  # Nan all set to 0
             targets = torch.tensor(list(map(float, data['label'])), dtype=torch.long)  # tensor already?
+
             print("targets : {}".format(targets))
             print("input size: {}".format(input_data.shape))
             print("target size: {}".format(targets.shape))
-            print(input_data[0, :, :, :, :].view(120,192,192)[89, :, :].shape) #
+            print(input_data[0, :, :, :, :].view(120, 192, 192)[89, :, :].shape)
+
             visualizer.img("slice{}".format(69_1), vis_data_1)
             visualizer.img("slice{}".format(69_2), vis_data_2.T)
             visualizer.img("slice{}".format(69_3), vis_data_3)
@@ -122,6 +124,7 @@ def train():
 
         # validation
         val_cm, val_acc = val(model, val_loader)
+
         visualizer.plot('val_acc', val_acc)
         visualizer.log("epoch:{epoch} || lr:{lr} | loss:{loss} | train_cm:{train_cm} | val_cm:{val_cm}".format(
             epoch = epoch,
@@ -146,7 +149,7 @@ def val(model,dataloader):
     obtain info from validation set
     """
     model.eval()
-    opt = DefaultConfig()
+    #opt = DefaultConfig()
     confusion_matrix = meter.ConfusionMeter(2)
     for batch_idx, data in tqdm(enumerate(dataloader)):
         val_input = data[opt.img_type]['data'].view(-1, 1, 192, 192, 120)  # tensor already?
@@ -171,16 +174,41 @@ def val(model,dataloader):
 
 #test 看看数据啥情况再写！
 
-#def test(**kwargs):
-#    opt.parse(kwargs)
-#
-#    if opt.load_model_path:
-#        model.load(opt.load_model_path)
-#    if opt.use_gpu:
-#        model.to(device)
-#
-#    # data
-#    test_data =
+def test(**kwargs):
+    opt.parse(kwargs)
+    # model
+    model = Conv3d(num_classes=2).eval()
+    if opt.load_model_path:
+        model.load(opt.load_model_path)
+    if opt.use_gpu:
+        model.cuda()
+    # data
+    test_data_set = make_dataset(opt.test_imgs, labels=None)
+    test_set = torchio.ImagesDataset(test_data_set.subjects)
+    test_loader = DataLoader(test_set, batch_size=opt.test_batch_size,
+                             shuffle=False,
+                             num_workers=opt.num_workers)
+    results = []
+    for batch_idx, data in enumerate(test_loader):
+        print(data[opt.img_type]['data'].shape)
+        input_data = data[opt.img_type]['data'].view(-1, 1, 192, 192,
+                                                     120)  # tensor already? view(-1, 120, 192, 192, 1) org: torch.Size([2, 1, 192, 192, 120])
+        input_data[torch.isnan(input_data)] = 0  # Nan all set to 0
+        input_data = torch.autograd.Variable(input_data, volatile=True)
+        targets = torch.tensor(list(map(float, data['label'])), dtype=torch.long)  # tensor already?
+        if opt.use_gpu:
+            input_data = input_data.to(device)
+            res = model(input_data)
+            print("last layer prob: {}".format(res[0].data))  # output from nn.sigmoid
+            prob_1 = res[0].data[0][1]
+            batch_res = [(targets_, prob_1) for targets_, prob_1_ in zip(targets, prob_1)]
+            results += batch_res
+    write_csv(results, opt.result_file)
+    return results
+
+
+
+
 
 
 
