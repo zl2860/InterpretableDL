@@ -20,13 +20,13 @@ class Conv3d(nn.Module):
 
         # kernel size may be changed later!
 
-        self.conv_layer1 = self.make_conv_layer(1, 128, (2, 2, 2), (2, 2, 2))
-        self.conv_layer2 = self.make_conv_layer(128, 256, (2, 2, 1), (1, 1, 1))
-        self.conv_layer3 = self.make_conv_layer(256, 512, (2, 2, 1), (1, 1, 1))
-        self.conv_layer4 = self.make_conv_layer(512, 1024, (2, 2, 1), (1, 1, 1))
-        self.conv_layer5 = self.make_conv_layer(1024, 1024, (2, 2, 1), (1, 1, 1))
+        self.conv_layer1 = self.make_conv_layer(1, 16, (2, 2, 2), (2, 2, 2))
+        self.conv_layer2 = self.make_conv_layer(16, 32, (2, 2, 1), (1, 1, 1))
+        self.conv_layer3 = self.make_conv_layer(32, 64, (2, 2, 1), (1, 1, 1))
+        self.conv_layer4 = self.make_conv_layer(64, 128, (2, 2, 1), (1, 1, 1))
+        self.conv_layer5 = self.make_conv_layer(128, 128, (2, 2, 1), (1, 1, 1))
 
-        self.fc1 = nn.Linear(245760, 512)
+        self.fc1 = nn.Linear(48640, 512)
         self.relu = nn.LeakyReLU()
         self.batch0 = nn.BatchNorm1d(512)
         self.drop = nn.Dropout3d(p=0.15)
@@ -55,7 +55,7 @@ class Conv3d(nn.Module):
         x = self.conv_layer5(x)
         x_1 = x
         x = x.view(x.size(0), -1)
-        #print(x.size)
+        print("shape before fc: {}".format(x.shape))
         x = self.fc1(x)
         x = self.relu(x)
         x = self.batch0(x)

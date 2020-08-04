@@ -43,7 +43,7 @@ def train():
     pre_loss = 1e10
 
     # create training and validation set
-    data_set = make_dataset(opt.train_imgs, opt.train_labels)
+    data_set = make_dataset(opt.img_type)
     num_subjects = len(data_set)
     training_split_ratio = opt.training_split_ratio
     num_training_subjects = int(training_split_ratio * num_subjects)
@@ -54,8 +54,8 @@ def train():
     training_set = torchio.ImagesDataset(training_subjects)
     validation_set = torchio.ImagesDataset(validation_subjects)
 
-    training_loader = DataLoader(training_set, batch_size=opt.batch_size)
-    val_loader = DataLoader(validation_set, batch_size=opt.batch_size)
+    training_loader = DataLoader(training_set, batch_size=opt.batch_size, drop_last=True)
+    val_loader = DataLoader(validation_set, batch_size=opt.batch_size, drop_last=True)
 
     # visualization
     vis = Visdom()
@@ -71,16 +71,17 @@ def train():
         # start training
         for batch_idx, data in enumerate(training_loader):
 
+            print("-------------Epoch {} Batch{}-------------".format(epoch, batch_idx))
             # check shapes
-            print(data[opt.img_type]['data'].shape)
+            print(data['img']['data'].shape)
 
-            # org: torch.Size([2, 1, 192, 192, 120]), we want depth = 120, channel = 1
-            input_data = data[opt.img_type]['data'].view(-1, 1, 192, 192, 120)
+            # org: torch.Size([2, 1, 192, 192, 120]), we want depth = 190, channel = 1
+            input_data = data['img']['data'].view(-1, 1, 190, 190, 190)
 
             # check one slice
-            vis_data_1 = (data['FA']['data'][0, 0, :, :, :][:, :, 69]) * 255.0
-            vis_data_2 = (data['FA']['data'][0, 0, :, :, :][69, :, :]) * 255.0
-            vis_data_3 = (data['FA']['data'][0, 0, :, :, :][:, 69, :]) * 255.0
+            vis_data_1 = (data['img']['data'][0, 0, :, :, :][:, :, 95]) * 255.0
+            vis_data_2 = (data['img']['data'][0, 0, :, :, :][95, :, :]) * 255.0
+            vis_data_3 = (data['img']['data'][0, 0, :, :, :][:, 95, :]) * 255.0
 
             # deal with missing values
             input_data[torch.isnan(input_data)] = 0  # Nan all set to 0
@@ -92,17 +93,21 @@ def train():
             print("targets : {}".format(targets))
             print("input size: {}".format(input_data.shape))
             print("target size: {}".format(targets.shape))
-            print(input_data[0, :, :, :, :].view(120, 192, 192)[89, :, :].shape)
+            print("one slice img size: {}".format(input_data[0, :, :, :, :].view(190, 190, 190)[95, :, :].shape))
 
             # check the images from one slice
-            visualizer.img("slice {}".format("69_1"), vis_data_1)
-            visualizer.img("slice {}".format("69_2"), vis_data_2.T)
-            visualizer.img("slice {}".format("69_3"), vis_data_3)
+            visualizer.img("slice {}".format("95_1"), vis_data_1)
+            visualizer.img("slice {}".format("95_2"), vis_data_2.T)
+            visualizer.img("slice {}".format("95_3"), vis_data_3)
+
+            if hasattr(torch.cuda, 'empty_cache'):
+                torch.cuda.empty_cache()
 
             # training
             if opt.use_gpu:
                 input_data = input_data.to(device)
-                targets = torch.tensor(targets).to(device)
+                targets = targets.to(device)
+                model = model.to(device)
 
             optimizer.zero_grad()
             res = model(input_data)  # a list, res[0].data: prob from output layer; res[1]: x_1
@@ -116,20 +121,22 @@ def train():
 
             vis.line([loss.item()], [global_step], win='train_loss', update='append')
 
-            loss_meter.add(loss.data)
+            loss_meter.add(loss.data.cpu())
             predicted = torch.max(res[0].data, 1)[1]
             confusion_matrix.add(predicted, targets.data)
 
             #print(confusion_matrix)
 
             if batch_idx % opt.print_freq == 0:
-                visualizer.plot('train_loss', loss_meter.value()[0])  # loss_meter.value()[0]: mean value of loss
+                visualizer.plot('train_loss', loss_meter.value()[0].cpu())  # loss_meter.value()[0]: mean value of loss
+            print("------------------------------------------")
+            print(" ")
 
         if epoch % opt.print_freq == 0:
             print("Epoch: {}/{} | loss: {}".format(epoch, opt.max_epoch, loss.item()))
 
 
-        #model.save()
+        #model.save
 
         # validation
         val_cm, val_acc = val(model, val_loader)  # val_cm: confusion matrix for validation; val_acc: accuracy
@@ -160,28 +167,33 @@ def val(model, dataloader):
     """
     obtain info from validation set
     """
+    # settings
     criterion = torch.nn.CrossEntropyLoss()
     visualizer = Visualizer(opt.env)
     vis = Visdom()
     model.eval()
     val_step = 0
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     #opt = DefaultConfig()
     val_loss_meter = meter.AverageValueMeter()
     confusion_matrix = meter.ConfusionMeter(2)
 
     for batch_idx, data in tqdm(enumerate(dataloader)):
-        val_input = data[opt.img_type]['data'].view(-1, 1, 192, 192, 120)  # tensor already?
-        val_input[torch.isnan(val_input)] = 0
+        val_input = data['img']['data'].view(-1, 1, 190, 190, 190)  # tensor already?
+
         val_label = torch.tensor(list(map(float, data['label'])), dtype=torch.long)  # tensor already?
 
         if opt.use_gpu:
-            val_input.to(device)
-            val_label.to(device)
+            val_input = val_input.to(device)
+            val_label = val_label.to(device)
+            model = model.to(device)
 
-        val_res = model(val_input)
+        with torch.no_grad():
+            val_res = model(val_input)
+
         val_loss = criterion(val_res[0], val_label)
-        val_loss_meter.add(val_loss.data)
+        val_loss_meter.add(val_loss.data.cpu())
 
         #if batch_idx % opt.print_freq == 0:
         #visualizer.plot('val_loss', val_loss_meter.value()[0])
