@@ -23,4 +23,4 @@ start training and navigate to the dashboard(default) to check the progress:
 python main.py train
 ```
 
-![image](img_files/visdom.png)
+![image](img_files/visdomserver.png)
