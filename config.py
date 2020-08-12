@@ -12,22 +12,21 @@ class DefaultConfig(object):
 
     # img_path = './data/img_data/'
     env = 'default'
-    batch_size = 2 # batch size
+    batch_size = 16  # batch size
     test_batch_size = 2   # for test
     use_gpu = True  # use GPU or not
-    num_workers = 0  # how many workers for loading data
+    num_workers = 4  # how many workers for loading data
     print_freq = 1  # print info every n epoch
     img_type = 'FA'
     result_file = 'result.csv'
     training_split_ratio = 0.8
     load_model_path = None  # None = not loading models
 
-
-
-    max_epoch = 400
-    lr = 0.0001  # initial learning rate
-    lr_decay = 0.95  # when val_loss increase, lr = lr*lr_decay
-    weight_decay = 1e-4 # for loss function
+    max_epoch = 10
+    lr = 0.01  # initial learning rate
+    lr_decay = 0.5  # when val_loss increase, lr = lr*lr_decay
+    weight_decay = 1e-4  # for loss function
+    crop_size = 13
 
     def parse(self, kwargs):
         """

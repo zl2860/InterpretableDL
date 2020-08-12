@@ -14,36 +14,41 @@ import pandas as pd
 random.seed(888)
 
 # Set up the data-set via TorchIO
-
-def make_dataset(img_type):
+def make_dataset(img_type, target = 'score'):  # target can either be att_score or label(ADHD)
     img_path = './data/img/'
     subj = sorted(os.listdir(img_path))
     imgs = [os.path.join(img_path, sub) + '/{}_{}.nii.gz'.format(sub, img_type) for sub in subj]
     labels = pd.read_csv('./data/label/label.csv').iloc[:, 1:].sort_values('id').iloc[:, 1]
+    score = pd.read_csv('./data/score/att_score.csv').sort_values('ID').iloc[:,1]
     subjects = list()
+    if target == 'label':
+        t = labels
 
-    for (img, label) in zip(imgs, labels):
-        print('img path: {}\nlabel: {}'.format(img, label))
+
+    elif target == 'score':
+        t = score
+
+    for (img, t) in zip(imgs, t):
+        print('img path: {}\nlabel: {}'.format(img, t))
         subject_dict = {
             'img': torchio.Image(img, torchio.LABEL, check_nans=False),
-            'label': label  # difference b/w label & intensity?
+            'target': t
         }
         print(subject_dict)
-        subject = torchio.Subject(subject_dict)
-        subjects.append(subject)
+        if not pd.isnull(subject_dict['target']):
+            subject = torchio.Subject(subject_dict)
+            subjects.append(subject)
 
     data_set = torchio.ImagesDataset(subjects)  # remember to add data augmentation options here!
     print('Dataset size:', len(data_set), 'subjects')
     return data_set
-
-
 
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     from torch.utils.data import DataLoader
     img_type = 'FA'
-    data_set = make_dataset(img_type)
+    data_set = make_dataset(img_type, target='score')
 
     # take a look into the sample returned by the dataset
     # default image has missing values

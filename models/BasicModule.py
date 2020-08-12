@@ -24,16 +24,17 @@ class BasicModule(nn.Module):
         """
         self.load_state_dict(torch.load(path))
 
-    def save(self, name = None):
+    def save(self, name=None):
         """
         save the model. The default filename is xxxx_mmdd_time.pth
         """
 
         if name is None:
-            prefix = 'checkpoints/' + self.model_name + '_'
-            name = time.strftime(prefix + '%m%d_%H:%M:%S:.pth')
+            prefix = './checkpoints/' + self.model_name + '_'
+            name = time.strftime(prefix + '%m%d_%H:%M:%S.pth')
 
         torch.save(self.state_dict(), name)
         return name
+
     def get_optimizer(self, lr, weight_decay):
         return torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)
