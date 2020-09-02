@@ -22,14 +22,16 @@ CuDNN
 
 ### run:
 
-set up the tensorboard first:
+start training:
+```
+python main.py train --load=False
+```
+
+
+set up the dashboard for visualization:
 ```
 tensorboard --logdir=./logs/exp_mm-dd/ #mm-dd:month-day, e.g. 09-02
 
-```
-start training and navigate to the dashboard(default) to check the progress:
-```
-python main.py train --load=False
 ```
 
 ![image](img_files/demo_1.png)
