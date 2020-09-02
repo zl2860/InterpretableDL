@@ -25,7 +25,7 @@ run:
 
 set up the tensorboard first:
 ```
-tensorboard --logdir=./logs/exp_mm-dd/
+tensorboard --logdir=./logs/exp_mm-dd/ #mm-dd:month-day, e.g. 09-02
 
 ```
 start training and navigate to the dashboard(default) to check the progress:
