@@ -12,7 +12,7 @@ in deep learning. Link: https://arxiv.org/abs/2003.04696).
 
 ## Usage
 
-Requirement:
+### Requirement:
 
 Python 3.7 +
 Tensorflow 
@@ -20,7 +20,7 @@ Pytorch
 CUDA 10.1
 CuDNN
 
-run:
+### run:
 
 set up the tensorboard first:
 ```
