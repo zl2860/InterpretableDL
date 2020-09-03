@@ -5,7 +5,7 @@ This project is for constructing a simple 3d-based convolutional neural network 
 
 ## Data
 
-The data were processed DTI imaging data (FA ,MD and other maps) and were not shared online. The dataset created by the package `torchio` directly fits `torch.utils.data.DataLoader`. Currently we have 1599 available subjects for training. The default setting of data transformation is `None` . Please refer to https://torchio.readthedocs.io/ for any infomation about transformation. (Pérez-García et al., TorchIO: a Python library for efficient loading, preprocessing, augmentation and patch-based sampling of medical images
+The data were processed DTI imaging data (FA ,MD and other maps) and were not shared online. The dataset created by the package `torchio` directly fits `torch.utils.data.DataLoader`. Currently we have 1599 available subjects for training. The default setting for data transformation is `None` . Please refer to https://torchio.readthedocs.io/ for any infomation about transformation. (Pérez-García et al., TorchIO: a Python library for efficient loading, preprocessing, augmentation and patch-based sampling of medical images
 in deep learning. Link: https://arxiv.org/abs/2003.04696).
 
 **Note: although we have a matched criterion for training set. We did not apply it in this version. A matched training set will be added soon.**
