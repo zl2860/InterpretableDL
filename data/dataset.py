@@ -66,6 +66,7 @@ def make_dataset(img_type, target='score'):
     imgs = [os.path.join(img_path, sub) + '/{}_{}.nii.gz'.format(sub, img_type) for sub in subj]
     score = pd.read_csv('./data/score/att_score_all.csv').sort_values('ID').iloc[:, 1]
     score_center = score - 60.78
+    assignment = pd.read_csv('./data/score/att_score_all.csv').sort_values('ID').iloc[:, 4]
     subjects = list()
 
     if target == 'score_center':
@@ -73,12 +74,13 @@ def make_dataset(img_type, target='score'):
     elif target == 'score':
         t = score
 
-    for (img, t) in zip(imgs, t):
+    for (img, t, train_val) in zip(imgs, t, assignment):
         print('img path: {}\nlabel: {}'.format(img, t))
         subject_dict = {
             'img': torchio.Image(img, torchio.INTENSITY, check_nans=False),
             'target': t,
-            'id': img.split('/')[3]
+            'id': img.split('/')[3],
+            'assignment': train_val
         }
         print(subject_dict['img']['data'].shape)
 
@@ -97,12 +99,8 @@ def make_dataset(img_type, target='score'):
 # get training and validation set
 def create_train_val(target='score', transform=False, img_type=opt.img_type):
     data_set = make_dataset(img_type=img_type, target=target)
-    num_subjects = len(data_set)
-    training_split_ratio = opt.training_split_ratio
-    num_training_subjects = int(training_split_ratio * num_subjects)
-
-    training_subjects = data_set.subjects[:num_training_subjects]
-    validation_subjects = data_set.subjects[num_training_subjects:]
+    training_subjects = [data_set.subjects[i] for i in range(len(data_set.subjects)) if data_set.subjects[i]['assignment'] == 'train']
+    validation_subjects = [data_set.subjects[i] for i in range(len(data_set.subjects)) if data_set.subjects[i]['assignment'] == 'val']
 
     # add a weighted sampler, though it is not used in training
     training_weights = [5 if training_subjects[i]['target'] >= 70 else 1 for i in range(len(training_subjects))]
@@ -150,35 +148,15 @@ if __name__ == "__main__":
 
     from torch.utils.data import DataLoader
     img_type = 'FA'
-    data_set = make_dataset(img_type, target='score')
+    train_loader, val_loader = create_train_val()
 
-    # take a look into the sample returned by the dataset
-    # default image has missing values
-    sample = data_set[0]
-    print(sample)
-    fa_map = sample['img']
-    print('Image Keys:', fa_map.keys())
-
-    # set up a data-loader that directly fits torch
-    num_subjects = len(data_set)
-    training_split_ratio = 0.8
-    num_training_subjects = int(training_split_ratio * num_subjects)
-    subjects = data_set.subjects
-
-    training_subjects = subjects[:num_training_subjects]
-    validation_subjects = subjects[num_training_subjects:]
-
-    training_set = torchio.SubjectsDataset(training_subjects)
-    validation_set = torchio.SubjectsDataset(validation_subjects)
-
-    temp = DataLoader(training_set, batch_size=32)
-
-    for batch_idx, data in enumerate(temp):
+    epoch = 0
+    for batch_idx, data in enumerate(train_loader):
         print("-------------Epoch {} Batch{}-------------".format(epoch + 1, batch_idx))
         # check shapes
         print(data['img']['data'].shape)
 
-    print('Training set:', len(training_set), 'subjects')
-    print('Validation set:', len(validation_set), 'subjects')
+    print('Training set:', len(train_loader.dataset), 'subjects')
+    print('Validation set:', len(val_loader.dataset), 'subjects')
 
 

@@ -60,12 +60,12 @@ class vgg3d(nn.Module):
         #self.gap = nn.AdaptiveAvgPool3d((None, None, None))
 
         self.fc = nn.Sequential(
-            nn.Linear(in_features=512, out_features=1024),
+            nn.Linear(in_features=512, out_features=2048),
             #nn.LayerNorm(normalized_shape=1024),
-            nn.BatchNorm1d(num_features=1024),
+            nn.BatchNorm1d(num_features=2048),
             nn.Dropout(p=0.75),
             nn.LeakyReLU(),
-            nn.Linear(in_features=1024, out_features=1),
+            nn.Linear(in_features=2048, out_features=1),
             #nn.BatchNorm1d(num_features=512),
             #nn.Dropout(p=0.65),
             #nn.LeakyReLU(),

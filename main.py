@@ -52,7 +52,7 @@ def train(load=False, target='score', lr=opt.lr, img_type=opt.img_type, transfor
         model = torch.load('./checkpoints/vgg3d_score_0901_n.pth').cuda()
 
     # loss & optimizer
-    criterion = torch.nn.L1Loss()  # only tried MAE here, you can customize the loss or use other choices
+    criterion = torch.nn.MSELoss()  # only tried MAE here, you can customize the loss or use other choices
     optimizer = torch.optim.Adam(model.parameters(),
                                  lr=lr,
                                  weight_decay=opt.weight_decay) # only tried Adam here, you can use other choices
@@ -68,6 +68,8 @@ def train(load=False, target='score', lr=opt.lr, img_type=opt.img_type, transfor
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     writer = SummaryWriter('./logs/exp_{}'.format(time.strftime('%m-%d')))
+    train_score = torch.tensor([training_loader.dataset.subjects[i]['target'] for i in range(len(training_loader.dataset))])
+    writer.add_histogram('Distribution of Training Data', train_score)
 
     # train
     for epoch in range(opt.max_epoch):
@@ -167,7 +169,7 @@ def val(model, dataloader):
     validation
     """
     # settings
-    criterion = torch.nn.L1Loss()
+    criterion = torch.nn.MSELoss()
     model.eval()
     val_step = 0
     val_loss_meter = meter.AverageValueMeter()
