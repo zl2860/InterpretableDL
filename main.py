@@ -34,7 +34,7 @@ from torchio.transforms import (
 )  # options for transformation using TorchIO, a tool for loading medical images into torch data-loaders
 
 
-def train(load=False, target='score', lr=opt.lr, img_type=opt.img_type, transform=False):
+def train(load=True, target='score', lr=opt.lr, img_type=opt.img_type, transform=False):
     '''
     :param load: Load pre-trained model if True
     :param target: 'score': use the original attention score(scale:50~100) to train;
@@ -49,7 +49,7 @@ def train(load=False, target='score', lr=opt.lr, img_type=opt.img_type, transfor
     if not load:
         model = vgg3d().cuda()
     else:
-        model = torch.load('./checkpoints/vgg3d_score_0901_n.pth').cuda()
+        model = torch.load('./checkpoints/exp_fc.4.bias_09-04.pth').cuda()
 
     # loss & optimizer
     criterion = torch.nn.MSELoss()  # only tried MAE here, you can customize the loss or use other choices
@@ -68,8 +68,8 @@ def train(load=False, target='score', lr=opt.lr, img_type=opt.img_type, transfor
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
     writer = SummaryWriter('./logs/exp_{}'.format(time.strftime('%m-%d')))
-    train_score = torch.tensor([training_loader.dataset.subjects[i]['target'] for i in range(len(training_loader.dataset))])
-    writer.add_histogram('Distribution of Training Data', train_score)
+    #train_score = torch.tensor([training_loader.dataset.subjects[i]['target'] for i in range(len(training_loader.dataset))])
+    #writer.add_histogram('Distribution of Training Data', train_score)
 
     # train
     for epoch in range(opt.max_epoch):
@@ -188,8 +188,8 @@ def val(model, dataloader):
 
         with torch.no_grad():
             val_res = model(val_input)
+            val_loss = criterion(val_res[0].squeeze(), val_label)  # predicted, label
 
-        val_loss = criterion(val_res[0].squeeze(), val_label)  # predicted, label
         running_loss += val_loss
         val_loss_meter.add(val_loss.data.cpu())
 
