@@ -27,7 +27,7 @@ class vgg3d(nn.Module):
         )
         self.conv2 = nn.Sequential(
             nn.Conv3d(in_channels=64, out_channels=128, kernel_size=(3, 3, 3), stride=1, padding=1),
-            nn.Conv3d(in_channels=128, out_channels=128, kernel_size=(3, 3, 3), stride=1, padding=1),
+            #nn.Conv3d(in_channels=128, out_channels=128, kernel_size=(3, 3, 3), stride=1, padding=1),
             nn.MaxPool3d(kernel_size=(2, 2, 2))
         )
         self.conv3 = nn.Sequential(
@@ -39,14 +39,14 @@ class vgg3d(nn.Module):
         )
         self.conv4 = nn.Sequential(
             nn.Conv3d(in_channels=256, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
-            nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
+            #nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
             #nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
             #nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
             nn.MaxPool3d(kernel_size=(2, 2, 2))
         )
         self.conv5 = nn.Sequential(
             nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
-            nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
+            #nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
             #nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
             #nn.Conv3d(in_channels=512, out_channels=512, kernel_size=(3, 3, 3), stride=1, padding=1),
             nn.MaxPool3d(kernel_size=(2, 2, 2))
@@ -60,17 +60,20 @@ class vgg3d(nn.Module):
         #self.gap = nn.AdaptiveAvgPool3d((None, None, None))
 
         self.fc = nn.Sequential(
-            nn.Linear(in_features=512, out_features=4096),
-            #nn.LayerNorm(normalized_shape=1024),
-            nn.BatchNorm1d(num_features=4096),
+            nn.Linear(in_features=512, out_features=1024),
+            #nn.LayerNorm(normalized_shape=4096),
+            nn.BatchNorm1d(num_features=1024),
             nn.Dropout(p=0.75),
             nn.LeakyReLU(),
-            nn.Linear(in_features=4096, out_features=1),
-            #nn.BatchNorm1d(num_features=512),
-            #nn.Dropout(p=0.65),
-            #nn.LeakyReLU(),
-            #nn.Linear(in_features=512, out_features=1)
+            #nn.Linear(in_features=2048, out_features=2048),
+            # nn.LayerNorm(normalized_shape=4096),
+            #nn.BatchNorm1d(num_features=2048),
+            #nn.Dropout(p=0.75),
+            #nn.LeakyReLU()
         )
+
+        self.fc_last = nn.Linear(in_features=1024, out_features=1)
+        nn.init.constant_(self.fc_last.bias, 61)
 
     def forward(self, x):
         #print(x.shape)
@@ -95,6 +98,7 @@ class vgg3d(nn.Module):
         print(x)
         print("input before fc: {}".format(x.shape))
         x = self.fc(x)
+        x = self.fc_last(x)
 
         return x, x_1  # x: last layer output; x_1 layer output before fc
 

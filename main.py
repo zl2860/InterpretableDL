@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 from torchnet import meter
 import torchio
 from models.vgg16 import vgg3d
+from models.ContrastLoss import WeightedMSELoss
 from tqdm import tqdm
 from torchio.transforms import (
     RandomFlip,
@@ -49,13 +50,12 @@ def train(load=True, target='score', lr=opt.lr, img_type=opt.img_type, transform
     if not load:
         model = vgg3d().cuda()
     else:
-        model = torch.load('./checkpoints/exp_fc.4.bias_09-04.pth').cuda()
+        model = torch.load('./checkpoints/exp_fc_last.bias_09-06.pth').cuda()
 
     # loss & optimizer
-    criterion = torch.nn.MSELoss()  # only tried MAE here, you can customize the loss or use other choices
-    optimizer = torch.optim.Adam(model.parameters(),
-                                 lr=lr,
-                                 weight_decay=opt.weight_decay) # only tried Adam here, you can use other choices
+    #criterion = torch.nn.MSELoss()  # only tried MAE here, you can customize the loss or use other choices
+    criterion = WeightedMSELoss(0.3)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=opt.weight_decay)  # only tried Adam here, you can use other choices
     # statistical results
     loss_meter = meter.AverageValueMeter()  # for tracking average training loss for every epoch
     pre_loss = 1e10
@@ -121,7 +121,8 @@ def train(load=True, target='score', lr=opt.lr, img_type=opt.img_type, transform
             res = model(input_data)  # a list, res[0].data: predicted results; res[1]: layer output before fc layers
             print("output size: {}".format(res[0].shape))
 
-            loss = criterion(res[0].squeeze(), targets)
+            #loss = criterion(res[0].squeeze(), targets)
+            loss = criterion(targets=targets, predicted=res[0].squeeze())
             print("train_loss: {}".format(loss.data))
 
             loss.backward()
@@ -133,15 +134,9 @@ def train(load=True, target='score', lr=opt.lr, img_type=opt.img_type, transform
             predicted = res[0].squeeze()
             print("train prediction: {}".format(predicted))
 
-            # validation
-            val_loss, val_running_loss = val(model, val_loader)  # test for each iter
-
             if batch_idx % opt.print_freq == 0:
                 writer.add_scalar('training loss',
                                   running_loss,
-                                  epoch * len(training_loader) + batch_idx)
-                writer.add_scalar('val loss',
-                                  val_loss,
                                   epoch * len(training_loader) + batch_idx)
 
                 for i, (name, param) in enumerate(model.named_parameters()):
@@ -152,8 +147,14 @@ def train(load=True, target='score', lr=opt.lr, img_type=opt.img_type, transform
             print("------------------------------------------")
             print(" ")
 
+            # validation
+        val_loss, val_running_loss = val(model, val_loader)  # test for each iter
+        writer.add_scalar('val loss',
+                            val_loss,
+                            epoch )
+
         # save model for every epoch
-        torch.save(model, './checkpoints/exp_{}_{}.pth'.format(name, time.strftime('%m-%d')))
+        torch.save(model, './checkpoints/exp_{}_{}.pth'.format(target, time.strftime('%m-%d')))
 
         if loss_meter.value()[0] > pre_loss:
             lr = lr * opt.lr_decay
@@ -161,6 +162,7 @@ def train(load=True, target='score', lr=opt.lr, img_type=opt.img_type, transform
                 param_group['lr'] = lr
 
         pre_loss = loss_meter.value()[0]
+
 
 
 # validation
@@ -205,6 +207,8 @@ def val(model, dataloader):
 
 
 if __name__ == "__main__":
+    import random
     import fire
+    random.seed(888)
     fire.Fire()
 
