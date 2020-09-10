@@ -22,8 +22,8 @@ class DefaultConfig(object):
     training_split_ratio = 0.8
     load_model_path = None  # None = not loading models
 
-    max_epoch = 300
-    lr = 0.03  # initial learning rate
+    max_epoch = 50
+    lr = 0.001  # initial learning rate
     lr_decay = 0.90  # when val_loss increase, lr = lr*lr_decay
     weight_decay = 1e-4  # for loss function
     crop_size = 0 # 13

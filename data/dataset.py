@@ -65,6 +65,8 @@ def make_dataset(img_type, target='score'):
     subj = sorted(os.listdir(img_path))
     imgs = [os.path.join(img_path, sub) + '/{}_{}.nii.gz'.format(sub, img_type) for sub in subj]
     score = pd.read_csv('./data/score/att_score_all.csv').sort_values('ID').iloc[:, 1]
+    score_group = pd.read_csv('./data/score/att_score_all.csv').sort_values('ID').iloc[:, 2]
+
     score_center = score - 60.78
     assignment = pd.read_csv('./data/score/att_score_all.csv').sort_values('ID').iloc[:, 4]
     subjects = list()
@@ -73,12 +75,14 @@ def make_dataset(img_type, target='score'):
         t = score_center
     elif target == 'score':
         t = score
+    else:
+        t = score_group
 
-    for (img, t, train_val) in zip(imgs, t, assignment):
-        print('img path: {}\nlabel: {}'.format(img, t))
+    for (img, outcome, train_val) in zip(imgs, t, assignment):
+        print('img path: {}\nlabel: {}'.format(img, outcome))
         subject_dict = {
             'img': torchio.Image(img, torchio.INTENSITY, check_nans=False),
-            'target': t,
+            'target': outcome,
             'id': img.split('/')[3],
             'assignment': train_val
         }
@@ -103,7 +107,11 @@ def create_train_val(target='score', transform=False, img_type=opt.img_type):
     validation_subjects = [data_set.subjects[i] for i in range(len(data_set.subjects)) if data_set.subjects[i]['assignment'] == 'val']
 
     # add a weighted sampler, though it is not used in training
-    training_weights = [5 if training_subjects[i]['target'] >= 70 else 1 for i in range(len(training_subjects))]
+    if target == 'score':
+        training_weights = [2 if training_subjects[i]['target'] >= 70 else 1 for i in range(len(training_subjects))]
+    elif target == 'score_group':
+        training_weights = [3 if training_subjects[i]['target'] == 1 else 1 for i in range(len(training_subjects))]
+
     training_sampler = WeightedRandomSampler(weights=training_weights,
                                              num_samples=len(training_weights),
                                              replacement=True)
@@ -122,8 +130,8 @@ def create_train_val(target='score', transform=False, img_type=opt.img_type):
     training_set = torchio.SubjectsDataset(training_subjects, transform=training_transform if transform else None)
     validation_set = torchio.SubjectsDataset(validation_subjects, transform=val_transform if transform else None)
 
-    training_loader = DataLoader(training_set, batch_size=opt.batch_size, drop_last=True, #sampler=training_sampler,
-                                 shuffle=True)
+    training_loader = DataLoader(training_set, batch_size=opt.batch_size, drop_last=True, sampler=training_sampler,
+                                 shuffle=False)
     val_loader = DataLoader(validation_set, batch_size=opt.batch_size, drop_last=True)
     return training_loader, val_loader
 
