@@ -150,14 +150,60 @@ def im_show(grid):
     plt.imshow(grid.permute(1, 2, 0))
 
 
+def check_fa(dataloader):
+    """
+    calculate the FA values for each subject
+    """
+    fa_all = []
+    id_all = []
+    for _, data in enumerate(dataloader):
+        img_batch = data['img']['data']
+        print(img_batch.shape)
+        id = data['id']
+        for idx in range(img_batch.shape[0]):
+            img_single = img_batch[idx, :, :, :, :].squeeze()
+            fa = torch.mean(img_single)
+            fa_all.append(fa)
+        id_all.append(id)
+    return id_all, fa_all
+
+
+def check_coverage(dataloader):
+    """
+    calculate the FA values for each subject
+    """
+    coverage_all = []
+    id_all = []
+    for _, data in enumerate(dataloader):
+        img_batch = data['img']['data']
+        print(img_batch.shape)
+        id = data['id']
+        for idx in range(img_batch.shape[0]):
+            img_single = img_batch[idx, :, :, :, :].squeeze()
+            coverage = torch.sum(img_single==0)/(190.0**3)
+            coverage_all.append(coverage)
+        id_all.append(id)
+    return id_all, coverage_all
+
 if __name__ == "__main__":
 
     # ignore the following
 
     from torch.utils.data import DataLoader
+    import seaborn as sns
     img_type = 'FA'
     train_loader, val_loader = create_train_val()
 
+    # check low image coverage
+    id_coverage, coverage = check_coverage(train_loader)
+    coverage = list(torch.tensor(coverage).numpy())
+    sns.distplot(coverage)
+    # check FA
+    id_FA, fa = check_fa(train_loader)
+    fa = list(torch.tensor(fa).numpy())
+    sns.distplot(fa)
+
+    # only for check input shape
     epoch = 0
     for batch_idx, data in enumerate(train_loader):
         print("-------------Epoch {} Batch{}-------------".format(epoch + 1, batch_idx))
