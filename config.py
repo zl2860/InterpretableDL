@@ -12,7 +12,7 @@ import torch
 class DefaultConfig(object):
     # img_path = './data/img_data/'
     env = 'default'
-    batch_size = 32  # batch size
+    batch_size = 16  # batch size
     test_batch_size = 2   # for test
     use_gpu = True  # use GPU or not
     num_workers = 4  # how many workers for loading data

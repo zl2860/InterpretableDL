@@ -101,7 +101,7 @@ def make_dataset(img_type, target='score'):
 
 
 # get training and validation set
-def create_train_val(target='score', transform=False, img_type=opt.img_type):
+def create_train_val(target='score', transform=False, img_type=opt.img_type, weight_sampler=False):
     data_set = make_dataset(img_type=img_type, target=target)
     training_subjects = [data_set.subjects[i] for i in range(len(data_set.subjects)) if data_set.subjects[i]['assignment'] == 'train']
     validation_subjects = [data_set.subjects[i] for i in range(len(data_set.subjects)) if data_set.subjects[i]['assignment'] == 'val']
@@ -130,7 +130,8 @@ def create_train_val(target='score', transform=False, img_type=opt.img_type):
     training_set = torchio.SubjectsDataset(training_subjects, transform=training_transform if transform else None)
     validation_set = torchio.SubjectsDataset(validation_subjects, transform=val_transform if transform else None)
 
-    training_loader = DataLoader(training_set, batch_size=opt.batch_size, drop_last=True, sampler=training_sampler,
+    training_loader = DataLoader(training_set, batch_size=opt.batch_size, drop_last=False,
+                                 sampler=training_sampler if weight_sampler else None,
                                  shuffle=False)
     val_loader = DataLoader(validation_set, batch_size=opt.batch_size, drop_last=True)
     return training_loader, val_loader
@@ -147,6 +148,7 @@ def display_slice(data):
 
 
 def im_show(grid):
+    plt.clf()
     plt.imshow(grid.permute(1, 2, 0))
 
 
@@ -185,6 +187,61 @@ def check_coverage(dataloader):
         id_all.append(id)
     return id_all, coverage_all
 
+
+def create_dir_not_exist(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+
+def visual_check(dataloader, dpi=800):
+    df = pd.DataFrame()
+    for batch_idx, data in enumerate(dataloader):
+
+        create_dir_not_exist('./visual_check/slice1')
+        create_dir_not_exist('./visual_check/slice2')
+        create_dir_not_exist('./visual_check/slice3')
+
+        print("-------------Batch{}-------------".format(batch_idx + 1))
+        # check shapes
+        print(data['img']['data'].shape)
+        print(len(data['id']))
+        # display slices on dashboard
+        grid_1, grid_2, grid_3 = display_slice(data)
+
+        im_show(grid_1)
+        plt.savefig('./visual_check/slice1/slice1_batch{}'.format(batch_idx + 1), dpi=dpi)
+        #
+        im_show(grid_2)
+        plt.savefig('./visual_check/slice2/slice2_batch{}'.format(batch_idx + 1), dpi=dpi)
+        #
+        im_show(grid_3)
+        plt.savefig('./visual_check/slice3/slice3_batch{}'.format(batch_idx + 1), dpi=dpi)
+
+
+        batch_column = pd.Series(data=data['id'], name='batch_{}'.format(batch_idx+1))
+        df = df.append(batch_column)
+    #df.to_csv('./visual_check/visual_check_list.csv')
+
+    return df
+
+
+def visual_check_single(id, type='FA'):
+    img_path = './data/img/sub-{}/'.format(id)
+    id_folder = 'sub-' + id + '_{}.nii.gz'.format(type)
+    img = torchio.Image(path=img_path+id_folder, type=torchio.INTENSITY, check_nans=False)
+    img = img['data'].squeeze()
+    print(img.shape)
+    plt.figure('Visualization - {} - {}'.format(type, id))
+    plt.subplot(1,3,1)
+    plt.imshow(img[95, :, :], cmap='gray')
+    plt.subplot(1, 3, 2)
+    plt.imshow(img[:, 95, :], cmap='gray')
+    plt.subplot(1, 3, 3)
+    plt.imshow(img[:, :, 95], cmap='gray')
+    plt.show()
+
+
+
 if __name__ == "__main__":
 
     # ignore the following
@@ -192,7 +249,11 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     import seaborn as sns
     img_type = 'FA'
-    train_loader, val_loader = create_train_val()
+    train_loader, val_loader = create_train_val(weight_sampler=False)
+
+    #visual check
+    visual_check_list = visual_check(train_loader)
+    visual_check_list.to_csv('./visual_check/visual_check_list.csv')
 
     # check low image coverage
     id_coverage, coverage = check_coverage(train_loader)
