@@ -63,7 +63,7 @@ def train(load=False, target='score', lr=opt.lr, img_type=opt.img_type, transfor
     pre_loss = 1e10
 
     # create training and validation set
-    training_loader, val_loader = create_train_val(target=target, img_type=img_type, transform=transform)
+    training_loader, val_loader = create_train_val()
 
     # visualization
     log_dir = './logs/exp_{}/'.format(time.strftime('%m-%d'))

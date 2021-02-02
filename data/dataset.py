@@ -45,7 +45,7 @@ def check_tensor_dim(tensor):
 
 
 # check if the target is missing
-def  check_target_value(target):
+def check_target_value(target):
     if pd.isnull(target):
         return False
     else:
@@ -61,24 +61,12 @@ def make_dataset(img_type, target='score'):
     :return: TorchIO.dataset object
     '''
 
-    img_path = './data/img/'
-    subj = sorted(os.listdir(img_path))
-    imgs = [os.path.join(img_path, sub) + '/{}_{}.nii.gz'.format(sub, img_type) for sub in subj]
-    score = pd.read_csv('./data/score/att_score_all.csv').sort_values('ID').iloc[:, 1]
-    score_group = pd.read_csv('./data/score/att_score_all.csv').sort_values('ID').iloc[:, 2]
+    img_path = './data/ADNI_T1/'
+    subj = sorted(os.listdir(img_path))[2:]
+    imgs = [os.path.join(img_path, sub) for sub in subj]
+    outcome = [0] * 6534
 
-    score_center = score - 60.78
-    assignment = pd.read_csv('./data/score/att_score_all.csv').sort_values('ID').iloc[:, 4]
-    subjects = list()
-
-    if target == 'score_center':
-        t = score_center
-    elif target == 'score':
-        t = score
-    else:
-        t = score_group
-
-    for (img, outcome, train_val) in zip(imgs, t, assignment):
+    for (img, outcome) in zip(imgs, t):
         print('img path: {}\nlabel: {}'.format(img, outcome))
         subject_dict = {
             'img': torchio.Image(img, torchio.INTENSITY, check_nans=False),
